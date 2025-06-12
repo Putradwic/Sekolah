@@ -485,5 +485,112 @@ public function updateGuru($idguru, $data) {
     return $query->execute();
 }
 
+public function getJumlahSiswaPerJurusan() {
+    $query = "SELECT j.namajurusan, COUNT(s.idsiswa) as jumlah 
+              FROM siswa s 
+              JOIN jurusan j ON s.kodejurusan = j.kodejurusan 
+              GROUP BY j.namajurusan";
+    $result = mysqli_query($this->koneksi, $query);
+    
+    $data = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $data[] = $row;
+    }
+    
+    return $data;
+}
+
+public function getDistribusiAgamaSiswa() {
+    $query = "SELECT a.agama, COUNT(s.idsiswa) as jumlah 
+              FROM siswa s 
+              JOIN agama a ON s.kodeagama = a.kodeagama 
+              GROUP BY a.agama";
+    $result = mysqli_query($this->koneksi, $query);
+    
+    $data = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $data[] = $row;
+    }
+    
+    return $data;
+}
+
+public function getPertumbuhanSiswa5TahunTerakhir() {
+    $query = "SELECT YEAR(tanggal_daftar) as tahun, COUNT(idsiswa) as jumlah 
+              FROM siswa 
+              WHERE tanggal_daftar >= DATE_SUB(CURDATE(), INTERVAL 5 YEAR) 
+              GROUP BY YEAR(tanggal_daftar) 
+              ORDER BY tahun ASC";
+    $result = mysqli_query($this->koneksi, $query);
+    
+    $data = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $data[] = $row;
+    }
+    
+    // Pastikan ada data untuk 5 tahun terakhir
+    $currentYear = date('Y');
+    $years = [];
+    for ($i = 4; $i >= 0; $i--) {
+        $year = $currentYear - $i;
+        $years[$year] = 0;
+    }
+    
+    foreach ($data as $row) {
+        $years[$row['tahun']] = $row['jumlah'];
+    }
+    
+    $finalData = [];
+    foreach ($years as $year => $jumlah) {
+        $finalData[] = ['tahun' => $year, 'jumlah' => $jumlah];
+    }
+    
+    return $finalData;
+}
+
+public function getJumlahSiswaPerKelas() {
+    $query = "SELECT kelas, COUNT(idsiswa) as jumlah 
+              FROM siswa 
+              GROUP BY kelas 
+              ORDER BY kelas";
+    $result = mysqli_query($this->koneksi, $query);
+    
+    $data = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $data[] = $row;
+    }
+    
+    return $data;
+}
+
+public function getJenisKelaminSiswa() {
+    $query = "SELECT jeniskelamin, COUNT(idsiswa) as jumlah 
+              FROM siswa 
+              GROUP BY jeniskelamin";
+    $result = mysqli_query($this->koneksi, $query);
+    
+    $data = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $data[] = $row;
+    }
+    
+    return $data;
+}
+
+public function getJumlahGuruPerGolongan() {
+    $query = "SELECT g.golongan, COUNT(gr.idguru) as jumlah 
+              FROM guru gr 
+              JOIN golonganguru g ON gr.kodegolongan = g.kodegolongan 
+              GROUP BY g.golongan";
+    $result = mysqli_query($this->koneksi, $query);
+    
+    $data = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $data[] = $row;
+    }
+    
+    return $data;
+}
+
 }
 ?>

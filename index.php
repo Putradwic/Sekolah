@@ -7,6 +7,13 @@ $jumlahSiswa = $db->hitungJumlahSiswa();
 $jumlahJurusan = $db->hitungJumlahJurusan();
 $jumlahGuru = $db->hitungJumlahGuru();
 
+$dataSiswaJurusan = $db->getJumlahSiswaPerJurusan();
+$dataSiswaKelas = $db->getJumlahSiswaPerKelas();
+
+usort($dataSiswaJurusan, function($a, $b) {
+    return $b['jumlah'] - $a['jumlah'];
+});
+
 ?>
 
 <!doctype html>
@@ -32,6 +39,7 @@ $jumlahGuru = $db->hitungJumlahGuru();
       integrity="sha256-tXJfXfp6Ewt1ilPzLDtQnJV4hclT9XuaZUKyUvmyr+Q="
       crossorigin="anonymous"
     />
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <!--end::Fonts-->
     <!--begin::Third Party Plugin(OverlayScrollbars)-->
     <link
@@ -367,45 +375,77 @@ $jumlahGuru = $db->hitungJumlahGuru();
                 </div>
                 <!--end::Small Box Widget 4-->
               </div>
-              <div class="col-lg-3 col-6">
-                <!--begin::Small Box Widget 4-->
-                <div class="small-box text-bg-warning">
-                  <div class="inner">
-                    <h3>65</h3>
-                    <p>Unique Visitors</p>
-                  </div>
-                  <svg
-                    class="small-box-icon"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                    aria-hidden="true"
-                  >
-                    <path
-                      clip-rule="evenodd"
-                      fill-rule="evenodd"
-                      d="M2.25 13.5a8.25 8.25 0 018.25-8.25.75.75 0 01.75.75v6.75H18a.75.75 0 01.75.75 8.25 8.25 0 01-16.5 0z"
-                    ></path>
-                    <path
-                      clip-rule="evenodd"
-                      fill-rule="evenodd"
-                      d="M12.75 3a.75.75 0 01.75-.75 8.25 8.25 0 018.25 8.25.75.75 0 01-.75.75h-7.5a.75.75 0 01-.75-.75V3z"
-                    ></path>
-                  </svg>
-                  <a
-                    href="#"
-                    class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover"
-                  >
-                    More info <i class="bi bi-link-45deg"></i>
-                  </a>
-                </div>
-                <!--end::Small Box Widget 4-->
-              </div>
               <!--end::Col-->
             </div>
             <!--end::Row-->
             <!--begin::Row-->
             <div class="row">
+              <!-- Chart Siswa per Jurusan -->
+              <div class="col-md-6">
+                <div class="card">
+                  <div class="card-header">
+                      <h3 class="card-title">
+                          <i class="bi bi-pie-chart-fill me-2"></i>
+                          Distribusi Siswa per Jurusan
+                      </h3>
+                      <div class="card-tools">
+                          <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                              <i class="bi bi-dash"></i>
+                          </button>
+                      </div>
+                  </div>
+                  <div class="card-body">
+                      <?php if(!empty($dataSiswaJurusan)): ?>
+                          <div id="siswaJurusanChart" style="min-height: 400px;"></div>
+                          
+                          <!-- Tabel ringkasan data -->
+                          <div class="mt-3">
+                              <h6 class="font-weight-bold">Ringkasan Data:</h6>
+                              <div class="table-responsive">
+                                  <table class="table table-sm table-striped">
+                                      <thead class="table-dark">
+                                          <tr>
+                                              <th>No</th>
+                                              <th>Nama Jurusan</th>
+                                              <th class="text-end">Jumlah</th>
+                                              <th class="text-end">%</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody>
+                                          <?php 
+                                          $totalSiswa = array_sum(array_column($dataSiswaJurusan, 'jumlah'));
+                                          $no = 1;
+                                          foreach($dataSiswaJurusan as $jurusan): 
+                                              $persentase = $totalSiswa > 0 ? round(($jurusan['jumlah'] / $totalSiswa) * 100, 1) : 0;
+                                          ?>
+                                          <tr>
+                                              <td><?= $no++ ?></td>
+                                              <td><?= htmlspecialchars($jurusan['namajurusan']) ?></td>
+                                              <td class="text-end"><?= number_format($jurusan['jumlah']) ?></td>
+                                              <td class="text-end"><?= $persentase ?>%</td>
+                                          </tr>
+                                          <?php endforeach; ?>
+                                      </tbody>
+                                      <tfoot class="table-secondary">
+                                          <tr class="fw-bold">
+                                              <td colspan="2">Total</td>
+                                              <td class="text-end"><?= number_format($totalSiswa) ?></td>
+                                              <td class="text-end">100%</td>
+                                          </tr>
+                                      </tfoot>
+                                  </table>
+                              </div>
+                          </div>
+                      <?php else: ?>
+                          <div class="alert alert-info">
+                              <i class="bi bi-info-circle me-2"></i>
+                              Belum ada data siswa yang tersedia.
+                          </div>
+                      <?php endif; ?>
+                  </div>
+                </div>
+              </div>
+
             </div>
             <!-- /.row (main row) -->
           </div>
@@ -472,6 +512,128 @@ $jumlahGuru = $db->hitungJumlahGuru();
         }
       });
     </script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+
+          // Chart 1: Siswa per Jurusan (Pie Chart)
+          <?php if (!empty($dataSiswaJurusan)): ?>
+          var chartDataJurusan = [
+              <?php foreach ($dataSiswaJurusan as $index => $jurusan): ?>
+              <?= $jurusan['jumlah'] ?><?= $index < count($dataSiswaJurusan) - 1 ? ',' : '' ?>
+              <?php endforeach; ?>
+          ];
+
+          var chartCategoriesJurusan = [
+              <?php foreach ($dataSiswaJurusan as $index => $jurusan): ?>
+              '<?= addslashes($jurusan['namajurusan']) ?>'<?= $index < count($dataSiswaJurusan) - 1 ? ',' : '' ?>
+              <?php endforeach; ?>
+          ];
+
+          var siswaJurusanOptions = {
+              series: chartDataJurusan,
+              chart: {
+                  type: 'pie',
+                  height: 400,
+                  toolbar: {
+                      show: true,
+                      tools: {
+                          download: true,
+                          selection: false,
+                          zoom: false,
+                          zoomin: false,
+                          zoomout: false,
+                          pan: false,
+                          reset: false
+                      }
+                  }
+              },
+              labels: chartCategoriesJurusan,
+              colors: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#20c997', '#fd7e14', '#17a2b8', '#6c757d', '#e83e8c'],
+              dataLabels: {
+                  enabled: true,
+                  formatter: function (val, opts) {
+                      return opts.w.config.labels[opts.seriesIndex] + ": " + val.toFixed(1) + "%";
+                  },
+                  style: {
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      colors: ['#fff']
+                  },
+                  dropShadow: {
+                      enabled: true,
+                      top: 1,
+                      left: 1,
+                      blur: 1,
+                      color: '#000',
+                      opacity: 0.45
+                  }
+              },
+              plotOptions: {
+                  pie: {
+                      expandOnClick: true,
+                      donut: {
+                          size: '0%'
+                      }
+                  }
+              },
+              tooltip: {
+                  y: {
+                      formatter: function (val, opts) {
+                          var total = opts.series.reduce((a, b) => a + b, 0);
+                          var percentage = ((val / total) * 100).toFixed(1);
+                          return val + " siswa (" + percentage + "%)";
+                      }
+                  }
+              },
+              legend: {
+                  show: true,
+                  position: 'bottom',
+                  horizontalAlign: 'center',
+                  floating: false,
+                  fontSize: '12px',
+                  fontFamily: 'Helvetica, Arial',
+                  fontWeight: 400,
+                  formatter: function (seriesName, opts) {
+                      var total = opts.w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+                      var percentage = ((opts.w.globals.series[opts.seriesIndex] / total) * 100).toFixed(1);
+                      return seriesName + ": " + opts.w.globals.series[opts.seriesIndex] + " (" + percentage + "%)";
+                  },
+                  markers: {
+                      width: 8,
+                      height: 8,
+                      strokeWidth: 0,
+                      strokeColor: '#fff',
+                      fillColors: undefined,
+                      radius: 8,
+                      customHTML: undefined,
+                      onClick: undefined,
+                      offsetX: 0,
+                      offsetY: 0
+                  },
+                  itemMargin: {
+                      horizontal: 3,
+                      vertical: 3
+                  }
+              },
+              responsive: [{
+                  breakpoint: 768,
+                  options: {
+                      chart: {
+                          height: 300
+                      },
+                      legend: {
+                          position: 'bottom',
+                          fontSize: '11px'
+                      }
+                  }
+              }]
+          };
+
+          var siswaJurusanChart = new ApexCharts(document.querySelector("#siswaJurusanChart"), siswaJurusanOptions);
+          siswaJurusanChart.render();
+          <?php endif; ?>
+      });
+    </script>
     <!--end::OverlayScrollbars Configure-->
     <!-- OPTIONAL SCRIPTS -->
     <!-- sortablejs -->
@@ -494,6 +656,9 @@ $jumlahGuru = $db->hitungJumlahGuru();
       cardHeaders.forEach((cardHeader) => {
         cardHeader.style.cursor = 'move';
       });
+    </script>
+    <script>
+      
     </script>
     <!--end::Script-->
   </body>
