@@ -17,21 +17,22 @@ if (isset($_GET['kodeagama'])) {
   $data = null;
 }
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan'])) {
-    print_r($_POST);
-    
-    $result = $db->updateagama($_POST['kodeagama'], $_POST);
-    
-    echo "Kodeagama: " . $_POST['kodeagama'] . "\n";
-    echo "Agama: " . $_POST['agama'] . "\n";
+    $kodeagama = $_POST['kodeagama'];
+
+    $result = $db->updateagama($kodeagama, $_POST);
 
     if ($result) {
-        echo "✅ Data berhasil diperbarui!\n";
+        $pesan = "Data agama berhasil diperbarui!";
+        $tipe_pesan = 'success';
+
+        // Ambil ulang data siswa untuk form
+        $data = $db->getAgamaByKode($kodeagama);
     } else {
-        echo "❌ Gagal memperbarui data!\n";
+        $pesan = "Gagal memperbarui data guru! Mungkin jurusan sudah terdaftar.";
+        $tipe_pesan = 'danger';
     }
 
-    header("Location: dataagama.php");
-    exit();
+    $showModal = true; // Biar modal muncul di view
 }
 ?>
 <!doctype html>
@@ -339,9 +340,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan'])) {
                             name="agama"
                             required
                           />
-                          
                           <!-- Input hidden yang penting banget -->
                           <input type="hidden" name="kodeagama" value="<?= htmlspecialchars($data['kodeagama'] ?? '') ?>">
+                          <div class="invalid-feedback">Agama tidak boleh kosong</div>
                         </div>
 
                         <!--end::Col-->
@@ -359,6 +360,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan'])) {
                     <!--end::Footer-->
                   </form>
                   <!--end::Form-->
+                  <div class="modal fade" id="modalPesan" tabindex="-1" aria-labelledby="modalPesanLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                      <div class="modal-content border-<?= $tipe_pesan ?>">
+                          <div class="modal-header bg-<?= $tipe_pesan ?> text-white">
+                              <h5 class="modal-title" id="modalPesanLabel">
+                                  <?= $tipe_pesan == 'success' ? 'Berhasil' : 'Gagal' ?>
+                              </h5>
+                              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                              <?= $pesan ?>
+                          </div>
+                          <div class="modal-footer">
+                              <button class="btn btn-outline-<?= $tipe_pesan ?>" 
+                                      onclick="location.href='<?= $tipe_pesan === 'success' ? 'dataagama.php' : 'editagama.php?kodejurusan=' . (isset($kodeagama) ? $kodeagama : '') ?>'">
+                                  Tutup
+                              </button>
+                          </div>
+                    </div>
+                  </div>
                   <!--begin::JavaScript-->
                   <script>
                     // Example starter JavaScript for disabling form submissions if there are invalid fields
@@ -457,6 +478,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan'])) {
       });
     </script>
     <!--end::OverlayScrollbars Configure-->
+        <script>
+      // Form validation
+      (() => {
+        'use strict';
+        const forms = document.querySelectorAll('.needs-validation');
+        Array.from(forms).forEach((form) => {
+          form.addEventListener('submit', (event) => {
+            if (!form.checkValidity()) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+          }, false);
+        });
+      })();
+    </script>
+
+    <?php if ($showModal): ?>
+    <script>
+      // Menampilkan modal setelah halaman dimuat
+      document.addEventListener('DOMContentLoaded', function() {
+          const pesanModal = new bootstrap.Modal(document.getElementById('modalPesan'));
+          pesanModal.show();
+      });
+    </script>
+    <?php endif; ?>
     <!--end::Script-->
   </body>
   <!--end::Body-->

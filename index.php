@@ -397,45 +397,6 @@ usort($dataSiswaJurusan, function($a, $b) {
                   <div class="card-body">
                       <?php if(!empty($dataSiswaJurusan)): ?>
                           <div id="siswaJurusanChart" style="min-height: 400px;"></div>
-                          
-                          <!-- Tabel ringkasan data -->
-                          <div class="mt-3">
-                              <h6 class="font-weight-bold">Ringkasan Data:</h6>
-                              <div class="table-responsive">
-                                  <table class="table table-sm table-striped">
-                                      <thead class="table-dark">
-                                          <tr>
-                                              <th>No</th>
-                                              <th>Nama Jurusan</th>
-                                              <th class="text-end">Jumlah</th>
-                                              <th class="text-end">%</th>
-                                          </tr>
-                                      </thead>
-                                      <tbody>
-                                          <?php 
-                                          $totalSiswa = array_sum(array_column($dataSiswaJurusan, 'jumlah'));
-                                          $no = 1;
-                                          foreach($dataSiswaJurusan as $jurusan): 
-                                              $persentase = $totalSiswa > 0 ? round(($jurusan['jumlah'] / $totalSiswa) * 100, 1) : 0;
-                                          ?>
-                                          <tr>
-                                              <td><?= $no++ ?></td>
-                                              <td><?= htmlspecialchars($jurusan['namajurusan']) ?></td>
-                                              <td class="text-end"><?= number_format($jurusan['jumlah']) ?></td>
-                                              <td class="text-end"><?= $persentase ?>%</td>
-                                          </tr>
-                                          <?php endforeach; ?>
-                                      </tbody>
-                                      <tfoot class="table-secondary">
-                                          <tr class="fw-bold">
-                                              <td colspan="2">Total</td>
-                                              <td class="text-end"><?= number_format($totalSiswa) ?></td>
-                                              <td class="text-end">100%</td>
-                                          </tr>
-                                      </tfoot>
-                                  </table>
-                              </div>
-                          </div>
                       <?php else: ?>
                           <div class="alert alert-info">
                               <i class="bi bi-info-circle me-2"></i>

@@ -346,8 +346,6 @@ class database {
             return false;
         }
 
-        echo "Query berhasil dieksekusi. Baris berubah: " . $query->affected_rows . "<br>";
-
         return true;
     }
 public function updatejurusan($kodejurusan, $data) {
@@ -371,8 +369,6 @@ public function updatejurusan($kodejurusan, $data) {
         echo "Gagal eksekusi: " . $query->error . "<br>";
         return false;
     }
-
-    echo "Query berhasil dieksekusi. Baris berubah: " . $query->affected_rows . "<br>";
 
     return true;
 }

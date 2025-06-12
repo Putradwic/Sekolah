@@ -2,39 +2,48 @@
 include 'koneksi.php'; // koneksi $db
 $db = new database(); // instance class
 
+// Inisialisasi variabel untuk modal
+$pesan = '';
+$tipe_pesan = '';
+$showModal = false;
+
 if (isset($_GET['idguru'])) {
-  $idguru = $_GET['idguru'];
-  $data = $db->getGuruById($idguru);
-  
-  // Jika data tidak ditemukan
-  if (!$data) {
-      $pesan = "Data guru dengan ID {$idguru} tidak ditemukan!";
-      $tipe_pesan = 'danger';
-  }
+    $idguru = $_GET['idguru'];
+    $data = $db->getGuruById($idguru);
+ 
+    // Jika data tidak ditemukan
+    if (!$data) {
+        $pesan = "Data guru dengan ID {$idguru} tidak ditemukan!";
+        $tipe_pesan = 'danger';
+        $showModal = true;
+    }
 } else {
-  // Jika tidak ada parameter nisn
-  $pesan = "Parameter guru tidak ditemukan!";
-  $tipe_pesan = 'danger';
-  $data = null;
+    // Jika tidak ada parameter idguru
+    $pesan = "Parameter guru tidak ditemukan!";
+    $tipe_pesan = 'danger';
+    $data = null;
+    $showModal = true;
 }
 
-// Proses form ketika di-submit
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-  // Update data siswa
-  $result = $db->updateGuru($_POST['idguru'], $_POST);
-  
-  if ($result) {
-      $pesan = "Data guru berhasil diperbarui!";
-      $tipe_pesan = 'success';
-      
-      // Ambil data terbaru setelah update
-      $data = $db->getGuruById($_POST['idguru']);
-  } else {
-      $pesan = "Gagal memperbarui data siswa!";
-      $tipe_pesan = 'danger';
-  }
-    header("Location: dataguru.php");
-    exit();
+// Logika ketika form disubmit dengan tombol simpan
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan'])) {
+    $idguru = $_POST['idguru'];
+    // Proses update data guru
+    $result = $db->updateGuru($idguru, $_POST);
+    
+    if ($result) {
+        // Jika berhasil update
+        $pesan = "Data guru berhasil diperbarui!";
+        $tipe_pesan = 'success';
+        // Ambil ulang data guru untuk form (refresh data)
+        $data = $db->getGuruById($idguru);
+    } else {
+        // Jika gagal update
+        $pesan = "Gagal memperbarui data guru! Mungkin ID Guru, Nama, atau No HP sudah terdaftar.";
+        $tipe_pesan = 'danger';
+    }
+    // Set flag untuk menampilkan modal
+    $showModal = true;
 }
 ?>
 <!doctype html>
@@ -402,30 +411,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                       </div>
                     </div>
                     <div class="card-footer">
-                        <button href="dataguru.php"  class="btn btn-primary" name="simpan" id="btnSimpan">Simpan</button>
+                         <button href="dataguru.php" type="submit" name="simpan" class="btn btn-primary">Simpan</button>
                         <a href="dataguru.php">
                         <button class="btn btn-secondary" type="button">Cencel</button>
                       </a>
                     </div>
                   </form>
                   <!--end::Form-->
-                    <div class="modal fade" id="modalKonfirmasi" tabindex="-1">
-                      <div class="modal-dialog">
-                        <div class="modal-content bg-white">
-                          <div class="modal-header bg-primary text-white">
-                            <h5 class="modal-title">Konfirmasi</h5>
-                            <button class="btn-close" data-bs-dismiss="modal"></button>
+                  <div class="modal fade" id="modalPesan" tabindex="-1" aria-labelledby="modalPesanLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                      <div class="modal-content border-<?= $tipe_pesan ?>">
+                          <div class="modal-header bg-<?= $tipe_pesan ?> text-white">
+                              <h5 class="modal-title" id="modalPesanLabel">
+                                  <?= $tipe_pesan == 'success' ? 'Berhasil' : 'Gagal' ?>
+                              </h5>
+                              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                           </div>
-                          <div class="modal-body" id="isiKonfirmasi">
-                            <!-- diisi JS -->
+                          <div class="modal-body">
+                              <?= $pesan ?>
                           </div>
                           <div class="modal-footer">
-                            <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                            <button class="btn btn-success" id="btnYaTambah">Ya, Tambahkan</button>
+                              <button class="btn btn-outline-<?= $tipe_pesan ?>" 
+                                      onclick="location.href='<?= $tipe_pesan === 'success' ? 'dataguru.php' : 'editguru.php?idguru=' . (isset($idguru) ? $idguru : '') ?>'">
+                                  Tutup
+                              </button>
                           </div>
-                        </div>
-                      </div>
-                    </div> 
+                    </div>
+                  </div>
                     <!--begin::JavaScript-->
                     <script>
                       // Example starter JavaScript for disabling form submissions if there are invalid fields
@@ -524,6 +536,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       });
     </script>
     <!--end::OverlayScrollbars Configure-->
+    <!-- Your other script tags... -->
     <script>
       // Form validation
       (() => {
@@ -539,57 +552,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
           }, false);
         });
       })();
+    </script>
 
-      // Confirmation modal
-      document.getElementById('btnSimpan').addEventListener('click', function(e) {
-          const form = document.getElementById('formGuru');
-          
-          // Validasi form
-          if (!form.checkValidity()) {
-              form.classList.add('was-validated');
-              return;
-          }
-          
-          // Ambil data untuk konfirmasi
-          const data = {
-              nama: document.querySelector('[name="nama"]').value,
-              nip: document.querySelector('[name="nip"]').value,
-              jeniskelamin: document.querySelector('[name="jeniskelamin"] option:checked')?.text,
-              agama: document.querySelector('[name="agama"] option:checked')?.text,
-              golongan: document.querySelector('[name="golongan"] option:checked')?.text,
-              nohp: document.querySelector('[name="nohp"]').value,
-              alamat: document.querySelector('[name="alamat"]').value
-          };
-
-          // Isi modal konfirmasi
-          document.getElementById('isiKonfirmasi').innerHTML = `
-              Yakin ingin memperbarui data guru:
-              <br><strong>Nama:</strong> ${data.nama}
-              <br><strong>NIP:</strong> ${data.nip}
-              <br><strong>Jenis Kelamin:</strong> ${data.jeniskelamin}
-              <br><strong>Agama:</strong> ${data.agama}
-              <br><strong>Golongan:</strong> ${data.golongan}
-              <br><strong>No HP:</strong> ${data.nohp}
-              <br><strong>Alamat:</strong> ${data.alamat}
-          `;
-
-          // Tampilkan modal
-          const modal = new bootstrap.Modal(document.getElementById('modalKonfirmasi'));
-          modal.show();
+    <?php if ($showModal): ?>
+    <script>
+      // Menampilkan modal setelah halaman dimuat
+      document.addEventListener('DOMContentLoaded', function() {
+          const pesanModal = new bootstrap.Modal(document.getElementById('modalPesan'));
+          pesanModal.show();
       });
-
-      // Handler untuk tombol "Ya" di modal
-      document.getElementById('btnYaTambah').addEventListener('click', function() {
-          // Submit form ketika dikonfirmasi
-          document.getElementById('formGuru').submit();
-      });
-      console.log('Modal element:', document.getElementById('modalKonfirmasi'));
-
-      <?php if ($showModal): ?>
-      setTimeout(() => {
-        window.location.href = '<?= $tipe_pesan === 'success' ? 'dataguru.php' : 'tambahguru.php' ?>';
-      }, 3000);
-      <?php endif; ?>
+    </script>
+    <?php endif; ?>
     </script>
     <!--end::Script-->
   </body>
